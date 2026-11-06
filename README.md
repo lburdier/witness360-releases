@@ -74,31 +74,89 @@ afficher ou masquer les traînées.
 
 ![Trackers, vue simple](captures/04_trackers_simple.png)
 
-### 3. Les salles suivantes
+### 3. Résoudre la caméra (solve)
 
-Masques, Objectif, Solveur, Coordonnées, 3D et Export suivent la logique d'un logiciel de matchmove.
-Chaque salle liste déjà ses fonctions prévues. Dans le Solveur, par exemple :
+Salle **Solveur**, bouton **Résoudre** (Maj+G).
 
-- solve complet ;
-- mode trépied ;
-- aide du gyroscope de la caméra 360 ;
-- erreur par tracker.
+- **Rotation** : le gyroscope du 360 donne la rotation du rig à chaque image. L'appli cale elle-même le
+  gyroscope sur l'image du plan. Sur cette scène, l'image FX3 arrive 138 ms après le son, sur les deux plans.
+- **Position et points** : la position de la caméra et celle des points viennent des trackers (triangulation, PnP,
+  ajustement de faisceaux).
+- **Verticale** : elle vient de l'accéléromètre du 360.
+- **Échelle** : elle vient de la hauteur de la caméra au-dessus du sol.
 
-![Salle Solveur](captures/05_salle_solveur.png)
+L'erreur s'affiche en pixels du plan, dans le panneau et image par image (courbe jaune de la timeline).
+Les trackers prennent la couleur de leur erreur :
 
-### 4. Mise à jour automatique
+- vert : 1,5 px ou moins ;
+- jaune : 3 px ou moins ;
+- rouge : plus de 3 px ;
+- gris : pas de position 3D.
+
+Les trackers posés sur la personne qui bouge sont rejetés : ils restent gris.
+
+![Solve, vue quadruple](captures/05_solveur_quad.png)
+
+### 4. Nettoyer les trackers puis affiner
+
+**Nettoyer les trackers** (Maj+C) retire, chacun avec son seuil :
+
+- les mauvaises images d'un tracker ;
+- les trackers à forte erreur ;
+- les trackers courts ;
+- les trackers lointains ;
+- les sauts isolés.
+
+Le solve est ensuite affiné. Sur PLAN_1, l'erreur passe de 2,22 px à 1,47 px.
+
+![Après nettoyage et affinage](captures/06_solveur_affine.png)
+
+Dans la vue caméra, chaque tracker garde sa couleur d'erreur. La croix blanche est le point 3D reprojeté, et le trait
+montre l'écart avec le tracker.
+
+![Erreur par tracker](captures/07_erreurs_trackers.png)
+
+### 5. Les deux caméras dans la scène 3D
+
+Les vues 3D montrent :
+
+- les points des trackers (×) ;
+- la trajectoire de la FX3 (trait plein) et celle du 360 (tirets) ;
+- les deux caméras à leur position.
+
+**F** ou un double-clic cadre le rig ; ici, la FX3 et le 360 sont à 15,1 cm l'un de l'autre.
+Le choix **Caméra active** passe de la FX3 d'un plan à la caméra 360 témoin.
+
+![Rig FX3 et 360](captures/08_rig_fx3_360.png)
+
+### 6. Export Alembic vers Blender
+
+**Exporter vers Blender (.abc)** (Ctrl+E) lance Blender en arrière-plan. Il écrit :
+
+- un `.abc` avec la caméra FX3 animée, le 360 témoin et le nuage de points ;
+- un `.blend` avec la plaque en fond de caméra.
+
+Vérification : une fois réimporté dans Blender, l'Alembic de PLAN_1 reprojette les trackers à 1,19 px
+(médiane, image 1920 px).
+Dans Blender, réglez la scène à la cadence du plan (25 i/s) avant **Fichier > Importer > Alembic**, ou ouvrez
+directement le `.blend`.
+
+![Export Blender](captures/09_export_blender.png)
+
+### 7. Mise à jour automatique
 
 Quand une nouvelle version est publiée ici, l'appli la propose au démarrage :
 
-![Mise à jour disponible](captures/06_mise_a_jour.png)
+![Mise à jour disponible](captures/10_mise_a_jour.png)
 
 ## Feuille de route
 
 | Version | Contenu |
 |---|---|
 | 0.1 | Import, synchro audio 360, auto-track, versions Windows et Mac, mise à jour automatique |
-| Prochaine | Masques (rig, opérateur), objectif FX3 (focale lue dans les métadonnées) |
-| Ensuite | Solve caméra aidé par le gyroscope 360, export Blender `.abc` + HDRI 360 |
+| 0.2 | Solve caméra aidé par le gyroscope 360, nettoyage des trackers, affinage, vues 3D avec la FX3 et le 360, export Alembic vers Blender |
+| Prochaine | Tracking directement sur l'image 360 (trackers tout autour du rig), solve combiné des deux caméras |
+| Ensuite | Masques (opérateur), objectif FX3 (métadonnées, distorsion), HDRI 360 dans la scène Blender |
 
 ## Configuration
 
