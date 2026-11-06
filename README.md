@@ -28,7 +28,14 @@ Ce dépôt sert à distribuer les versions compilées de witness360 (Windows et 
 Si Windows affiche « Windows a protégé votre ordinateur », cliquez sur « Informations complémentaires » puis « Exécuter quand même ».
 
 **Mac** : décompressez le zip et glissez `witness360.app` dans `Applications`. L'appli n'est pas encore signée par Apple :
-au premier lancement, faites clic droit sur l'appli puis « Ouvrir » (ou Réglages Système > Confidentialité et sécurité > « Ouvrir quand même »).
+au premier lancement, ouvrez Réglages Système > Confidentialité et sécurité, puis « Ouvrir quand même ». Si macOS dit que
+l'appli est endommagée, tapez dans le Terminal : `xattr -dr com.apple.quarantine /Applications/witness360.app`.
+Sur Mac, les raccourcis passent par ⌘ (Générer l'HDRI : ⇧⌘H), le pavé tactile déplace l'image (deux doigts) et zoome
+(pincer).
+
+**Vérifier l'installation** : `witness360 --autotest DOSSIER` (sur Mac :
+`/Applications/witness360.app/Contents/MacOS/witness360 --autotest ~/Desktop/autotest`) fabrique un tournage de
+synthèse dont tout est connu, passe toute la chaîne et compare chaque résultat à la vérité (10 à 20 minutes).
 
 ## Premiers pas
 
@@ -48,7 +55,8 @@ Chaque réglage a une bulle d'aide avec un exemple.
 
 - Le 360 vissé sur le rig de la caméra (griffe flash, poignée, cage) : il ne doit pas bouger par rapport à la caméra
   pendant la prise.
-- Le son enregistré par les deux caméras (le micro interne suffit), pour la synchro.
+- Le son enregistré par les deux caméras (le micro interne suffit), pour la synchro. Sans son commun (montage sur
+  une musique), les plans qui bougent se retrouvent par l'image.
 - Le 360 en vidéo non stabilisée (le .insv d'origine).
 - Une focale fixe pendant le plan (pas de zoom).
 - Utile : la position du 360 par rapport à la caméra et la hauteur de la caméra, mesurées au mètre ruban.
@@ -180,6 +188,39 @@ menu Aide > Rechercher les mises à jour.
 
 ![Mise à jour disponible](captures/13_mise_a_jour.png)
 
+## Montages : découpage en plans et synchro par l'image
+
+Importez un montage déjà coupé : l'appli trouve les coupes à l'image près et en fait un plan par plan (menu Plans >
+Regrouper pour annuler). Un rush de caméra reste une seule prise. À la synchro, chaque plan est placé dans le 360 par
+le son, et vérifié par l'image ; quand le son ne correspond pas, le plan est retrouvé par l'image : son mouvement est
+comparé à celui du rig vu par le gyroscope du 360 sur tout le fichier, puis le plan est cherché dans l'image 360.
+
+| Test | Coupes | Synchro par l'image (sans le son) |
+|---|---|---|
+| Montage de 4 morceaux des vrais plans (S-Log3, rig FX3 + ONE X2), sur une musique | 3 coupes sur 3, à l'image près | Les 4 plans retrouvés dans le 360 de 4 min 30 ; écart constant de 135 ms avec le son, qui est la latence image / son de la caméra |
+| Montage de synthèse de 4 plans d'environ 1 s, sur une musique | 3 coupes sur 3, à l'image près | Les 4 plans retrouvés, à 0,1 s près |
+
+## Autotest
+
+Chaque version est vérifiée sur Windows et sur Mac par `witness360 --autotest` : un tournage de synthèse (pièce
+texturée, rig caméra + Insta360 ONE X2 simulée avec son gyroscope, son commun, latence de la caméra) dont tout est
+connu. Toute la chaîne passe : découpage, synchro, auto-track, mesure de l'angle de vue sur le 360, solve, horloges,
+HDRI, export, projet.
+
+| Contrôle | Mac (appli compilée, macOS 26, Apple Silicon) | Windows (appli en Python) | Vérité |
+|---|---|---|---|
+| Découpage du montage de synthèse | coupes 30, 66, 94 | coupes 30, 66, 94 | 30, 66, 94 |
+| Synchro | à 0,0 ms, « son + image » | à 0,0 ms, « son + image » | |
+| Angle de vue mesuré sur le 360 | 54,99° | 55,00° | 55,00° |
+| Horloge du plan sur le gyroscope | à 4,4 ms | à 1,2 ms | |
+| Solve, puis affinage | 0,71 px, puis 0,47 px | 0,95 px, puis 0,50 px | |
+| Trajectoire de la caméra | écart médian 10 mm sur 1,43 m | écart médian 23 mm sur 1,43 m | |
+| HDRI : rapport HDRI / plan (tons moyens) | 1,005 | 1,002 | 1,00 |
+| Export Alembic par Blender, projet relu | écrits, relu | écrits, relu | |
+| Durée | 4 min 30 | 9 min | |
+
+L'appli compilée pour Windows passe aussi l'autotest sur le serveur de GitHub (15 contrôles sur 15 ; Blender n'y est pas installé, l'export Alembic est vérifié sur le poste de travail).
+
 ## Autres tournages testés
 
 | Cas | Résultat |
@@ -197,6 +238,7 @@ menu Aide > Rechercher les mises à jour.
 | 0.2.1 | Plans 4K de bout en bout |
 | 0.3 | HDRI tiré du 360, étalonné sur le plan, posé dans la scène Blender |
 | 0.4 | Tout tournage : calages mesurés sur les fichiers, toute caméra de plan et toute caméra 360, 9 courbes de couleur, rushes longs, projets. Salles Objectif, Coordonnées et Masques. Visite guidée, aide et exemples dans chaque salle, icônes animées |
+| 0.5 | Montages découpés en plans, synchro son + image, autotest sur tournage de synthèse, Mac (raccourcis, pavé tactile, écrans 13 pouces), fiabilité (horloges, masque du rig, journal, annulation) |
 | Prochaine | Opérateur retiré de l'HDRI, distorsion des objectifs, tracking directement sur l'image 360 |
 
 ## Configuration
