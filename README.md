@@ -7,7 +7,11 @@
 
 # witness360
 
-Tracking caméra aidé par une caméra 360 « témoin » montée sur le rig, livré dans Blender.
+Tracking caméra aidé par une caméra 360 « témoin » montée sur le rig, livré dans Blender avec un HDRI de la scène.
+
+La caméra 360 voit tout autour du rig et enregistre son gyroscope. Fixée à la caméra du plan, elle donne la rotation
+exacte du rig à chaque image, la verticale, et l'éclairage complet de la scène. witness360 s'en sert pour tracker le
+plan, résoudre la caméra et créer un HDRI étalonné sur le plan, puis envoie le tout dans Blender.
 
 Ce dépôt sert à distribuer les versions compilées de witness360 (Windows et Mac). Le code source est dans un dépôt privé.
 
@@ -26,166 +30,176 @@ Si Windows affiche « Windows a protégé votre ordinateur », cliquez sur « In
 **Mac** : décompressez le zip et glissez `witness360.app` dans `Applications`. L'appli n'est pas encore signée par Apple :
 au premier lancement, faites clic droit sur l'appli puis « Ouvrir » (ou Réglages Système > Confidentialité et sécurité > « Ouvrir quand même »).
 
-## Mises à jour automatiques
+## Premiers pas
 
-Au démarrage, witness360 regarde s'il existe une version plus récente sur cette page. Si oui, elle propose de l'installer :
-elle la télécharge, vérifie son empreinte SHA-256 (`SHA256SUMS.txt`), se ferme et redémarre sur la nouvelle version.
-Vérification manuelle : menu Aide > Rechercher les mises à jour.
+Au premier lancement, une **visite guidée** de 2 minutes montre le chemin, salle par salle. Elle reste dans le menu
+Aide, avec le **guide complet** (F12) : principe, matériel au tournage, formats, exemples de rigs, lecture des
+résultats, dépannage et raccourcis.
+
+![Visite guidée](captures/00_visite_guidee.png)
+
+Les salles se suivent dans l'ordre du travail (F1 à F9). La prochaine salle conseillée s'anime, une coche marque les
+salles faites. Chaque salle a son **aide** (bouton « ? », Maj+F1) : étapes, un exemple chiffré et des conseils.
+Chaque réglage a une bulle d'aide avec un exemple.
+
+![Accueil](captures/01_accueil.png)
+
+## Ce qu'il faut au tournage
+
+- Le 360 vissé sur le rig de la caméra (griffe flash, poignée, cage) : il ne doit pas bouger par rapport à la caméra
+  pendant la prise.
+- Le son enregistré par les deux caméras (le micro interne suffit), pour la synchro.
+- Le 360 en vidéo non stabilisée (le .insv d'origine).
+- Une focale fixe pendant le plan (pas de zoom).
+- Utile : la position du 360 par rapport à la caméra et la hauteur de la caméra, mesurées au mètre ruban.
+
+## Formats pris en charge
+
+| Élément | Formats |
+|---|---|
+| Caméra 360 | Insta360 .insv (un fichier, deux flux ou deux fichiers …_00_ / …_10_) et photos .insp ; vidéos et images 360 équirectangulaires de toute marque (export Insta360 Studio, GoPro Player…). Le gyroscope est lu dans les .insv. |
+| Plans | .mp4, .mov, .mxf, .m4v de toute caméra, toute cadence, toute résolution, rushes longs compris |
+| Courbes de couleur | Sony S-Log3 (S-Gamut3.Cine ou S-Gamut3), Panasonic V-Log, Canon Log 3, ARRI LogC3, Fujifilm F-Log, Apple Log, HLG, Rec.709 |
+| Métadonnées lues | Boîtiers Sony (boîtier, objectif, focale image par image, largeur du capteur), étiquettes QuickTime des autres caméras |
+| Sorties | Alembic .abc, Blender .blend (plaque, cadence, HDRI), HDRI .exr linéaire, projet .w360 |
+
+Rien n'est propre à un tournage dans l'appli : l'horloge et les axes du gyroscope, l'angle du rig, la latence de la
+caméra et l'angle de vue du plan sont mesurés sur les fichiers.
 
 ## Exemple : une scène réelle, pas à pas
 
-Scène de test : 2 plans tournés à la Sony FX3 en 4K (3840 × 2160, 25 i/s) avec une Insta360 ONE X2 montée
+Scène de test : 2 plans tournés à la Sony FX3 en 4K (3840 × 2160, 25 i/s, S-Log3) avec une Insta360 ONE X2 vissée
 sur le même rig. Le fichier 360 dure 9 min 53 s. Les plans durent 11 s et 9 s.
 
 ### 1. Importer et synchroniser
 
-On glisse le `.insv` et les deux plans dans la fenêtre, puis on clique sur **Synchroniser**.
-witness360 retrouve chaque plan dans la 360 par le son et le place sur la timeline 360, avec sa vignette.
+On glisse le fichier 360 et les plans dans la fenêtre, puis on clique sur **Synchroniser** (Ctrl+R).
+witness360 retrouve chaque plan dans la 360 par le son et le place sur la timeline 360.
 
 ![Médias et synchro](captures/02_medias_synchro.png)
 
-| Plan | Début retrouvé dans la 360 | Images 360 | Contrôle | Fiabilité |
-|---|---|---|---|---|
-| PLAN_1 (296 images) | 00:03:03:11 (183,542 s) | 5500,8 → 5855,6 | 3 morceaux à ±0,5 ms | Sûre |
-| PLAN_2 (238 images) | 00:04:04:09 (244,540 s) | 7328,9 → 7614,2 | 3 morceaux à ±1,9 ms | Sûre |
+| Plan | Début retrouvé dans la 360 | Contrôle | Fiabilité |
+|---|---|---|---|
+| PLAN_1 (296 images) | 00:03:03:11 (183,542 s) | 3 morceaux à ±0,5 ms | Sûre |
+| PLAN_2 (238 images) | 00:04:04:09 (244,540 s) | 3 morceaux à ±1,9 ms | Sûre |
 
-Le contrôle recale 3 morceaux de chaque plan séparément. Si l'écart entre eux reste sous une demi-image, la synchro est
-classée « Sûre ». Sinon, elle passe en « À vérifier ».
+Le contrôle recale 3 morceaux de chaque plan séparément. S'ils retombent au même endroit à moins d'une demi-image près,
+la synchro est « Sûre ». Un rush plus long que le 360, ou qui ne le recouvre qu'en partie, est accepté : sa
+**plage de travail** se cale sur la partie couverte par le 360 et se règle dans Propriétés. Sans son commun, la
+synchro se fait à la main.
 
 ### 2. Tracker le plan
 
-Salle **Trackers** : on lance l'auto-track sur le plan choisi.
-Les points sont suivis image par image, avec un contrôle aller-retour.
-La couleur dit combien de temps chaque point a été suivi :
+Salle **Trackers** : l'auto-track suit des centaines de points image par image, avec un contrôle aller-retour.
+Couleur : vert = suivi 40 images ou plus, jaune = 20 à 39, rouge = moins de 20. La timeline montre le nombre de
+trackers actifs sur chaque image.
 
-- vert : 40 images ou plus ;
-- jaune : de 20 à 39 images ;
-- rouge : moins de 20 images.
+![Trackers](captures/03_trackers_quad.png)
 
-En bas, la timeline montre le nombre de trackers actifs sur chaque image.
+L'aide de la salle donne les étapes, un exemple chiffré et les réglages à toucher selon le plan :
 
-![Trackers, vue quadruple](captures/03_trackers_quad.png)
+![Aide de la salle Trackers](captures/04_trackers_aide.png)
 
-Sur PLAN_1, l'auto-track garde 4034 trackers, avec 100 à 470 trackers actifs par image (349 en moyenne).
-Un tracker est suivi 26 images en moyenne, et jusqu'à 116.
-Les points sont suivis sur une image réduite à 960 px de large, plus robuste au flou des panoramiques, puis reportés
-sur le plan 4K. Sur cette scène, suivre en pleine résolution ne réduisait pas l'erreur du solve.
+La salle **Masques** exclut du tracking les zones qui ne suivent pas le décor (personnes, reflets, écran).
 
-La vue simple agrandit l'image. Vous pouvez y zoomer (50 à 200 %), afficher un seul canal (R, V, B, luminance) et
-afficher ou masquer les traînées.
+### 3. Objectif : focale et angle de vue
 
-![Trackers, vue simple](captures/04_trackers_simple.png)
+Salle **Objectif** : caméra, largeur du capteur et focale, lues dans les métadonnées quand elles existent.
+**Mesurer sur le 360** retrouve le plan dans l'image 360 à plusieurs instants : on en tire l'angle de vue réel du
+plan, donc la focale, et l'angle exact du rig.
 
-### 3. Résoudre la caméra (solve)
+![Objectif mesuré sur le 360](captures/05_objectif.png)
 
-Salle **Solveur**, bouton **Résoudre** (Maj+G).
-
-- **Rotation** : le gyroscope du 360 donne la rotation du rig à chaque image. L'appli cale elle-même le
-  gyroscope sur l'image du plan. Sur cette scène, l'image FX3 arrive 138 ms après le son, sur les deux plans.
-- **Position et points** : la position de la caméra et celle des points viennent des trackers (triangulation, PnP,
-  ajustement de faisceaux).
-- **Verticale** : elle vient de l'accéléromètre du 360.
-- **Échelle** : elle vient de la hauteur de la caméra au-dessus du sol.
-
-L'erreur s'affiche en pixels du plan, dans le panneau et image par image (courbe jaune de la timeline).
-Les trackers prennent la couleur de leur erreur. Les seuils suivent la largeur du plan :
-
-| Couleur | Plan de 1920 px | Plan 4K (3840 px) |
+| Plan | Angle de vue mesuré sur le 360 | Mesure de référence |
 |---|---|---|
-| vert | 1,5 px ou moins | 3 px ou moins |
-| jaune | 3 px ou moins | 6 px ou moins |
-| rouge | plus de 3 px | plus de 6 px |
-| gris | pas de position 3D | pas de position 3D |
+| PLAN_1 | 55,96° | 55,7° |
+| PLAN_2 | 52,47° | 52,8° |
 
-Les trackers posés sur la personne qui bouge sont rejetés : ils restent gris.
+### 4. Résoudre la caméra (solve)
 
-![Solve, vue quadruple](captures/05_solveur_quad.png)
+Salle **Solveur**, bouton **Résoudre** (Maj+G). Le gyroscope du 360 donne la rotation du rig à chaque image ; l'appli
+cale seule son horloge sur les trackers du plan (sur cette scène, l'image de la caméra arrive 132 à 137 ms après le
+son). Les trackers donnent la position de la caméra et des points. L'accéléromètre donne la verticale ; la hauteur
+de la caméra donne l'échelle.
 
-### 4. Nettoyer les trackers puis affiner
+![Solve](captures/06_solveur_quad.png)
 
-**Nettoyer les trackers** (Maj+C) retire, chacun avec son seuil :
+**Nettoyer les trackers** (Maj+C) retire les mauvaises images, les trackers à forte erreur, les trackers courts et les
+sauts, puis affine le solve : 2,91 px sur PLAN_1 et 2,08 px sur PLAN_2 (pixels 4K).
 
-- les mauvaises images d'un tracker ;
-- les trackers à forte erreur ;
-- les trackers courts ;
-- les trackers lointains ;
-- les sauts isolés.
+![Après nettoyage et affinage](captures/07_solveur_affine.png)
 
-Le solve est ensuite affiné. Sur PLAN_1, l'erreur passe de 4,57 px à 2,89 px (pixels 4K).
+Les trackers prennent la couleur de leur erreur (vert ≤ 3 px en 4K, jaune ≤ 6 px, rouge au-delà, gris sans position
+3D). La croix blanche est le point 3D reprojeté.
 
-![Après nettoyage et affinage](captures/06_solveur_affine.png)
+![Erreur par tracker](captures/08_erreurs_trackers.png)
 
-Dans la vue caméra, chaque tracker garde sa couleur d'erreur. La croix blanche est le point 3D reprojeté, et le trait
-montre l'écart avec le tracker.
+### 5. Placer la scène
 
-![Erreur par tracker](captures/07_erreurs_trackers.png)
+Salle **Coordonnées** : on clique des trackers dans la vue caméra, puis **Origine**, **Sol** (3 trackers ou plus),
+**Axe X** ou **Échelle** (distance réelle entre 2 trackers). Le repère est rejoué après chaque solve.
 
-### 5. Les deux caméras dans la scène 3D
+![Coordonnées](captures/09_coordonnees.png)
 
-Les vues 3D montrent :
+### 6. Les deux caméras en 3D
 
-- les points des trackers (×) ;
-- la trajectoire de la FX3 (trait plein) et celle du 360 (tirets) ;
-- les deux caméras à leur position.
+Les vues 3D montrent les points des trackers, la trajectoire de la caméra (trait plein) et celle du 360 (tirets).
+**F** ou un double-clic cadre le rig.
 
-**F** ou un double-clic cadre le rig ; ici, la FX3 et le 360 sont à 15,1 cm l'un de l'autre.
-Le choix **Caméra active** passe de la FX3 d'un plan à la caméra 360 témoin.
+![Caméra et 360 en 3D](captures/10_rig_camera_360.png)
 
-![Rig FX3 et 360](captures/08_rig_fx3_360.png)
+### 7. HDRI étalonné sur le plan
 
-### 6. HDRI de la scène, étalonné sur le plan
+Salle **HDRI** (Ctrl+H) : un HDRI `.exr` linéaire tiré du 360, à l'image choisie. Le rig est masqué
+automatiquement ; le 360 est comparé au plan pixel à pixel pour reprendre sa couleur et son exposition (un gris à 18 %
+vu par le plan vaut 0,18 dans l'HDRI). En orientation **Scène trackée**, l'HDRI est posé dans le repère de la caméra
+exportée : rien à tourner dans Blender.
 
-La salle **HDRI** (Ctrl+H) tire un HDRI `.exr` linéaire de la caméra 360, à l'image affichée dans la timeline :
+![HDRI](captures/11_hdri.png)
 
-- le rig, la caméra du plan, le moniteur et le câble sont détectés automatiquement (ils restent fixes dans
-  l'image 360) puis bouchés avec la lumière des alentours ;
-- le 360 est comparé au plan, à plusieurs images et pixel à pixel, pour reprendre sa couleur et son exposition.
-  Le plan est décodé en linéaire (S-Log3 / S-Gamut3.Cine pour la FX3, ou Rec.709) : un gris à 18 % vu par
-  le plan vaut 0,18 dans l'HDRI ;
-- en orientation **Scène trackée**, l'HDRI est posé dans le repère de la caméra exportée et recalé sur
-  l'image du plan. L'export Blender l'ajoute au monde du `.blend`, sans rotation à régler.
+Vérification sur PLAN_1 (rendu Cycles depuis la caméra exportée, monde seul) : l'HDRI retombe sur la plaque 4K à
+0,5 à 15 px près pour les éléments lointains, avec une lumière ×0,91 à ×1,04 dans les ombres, ×1,00 à ×1,05 dans les
+tons moyens et ×0,99 à ×1,02 dans les hautes lumières. PLAN_2, plus difficile (peu de décor commun entre le plan et
+le 360) : 35 à 68 px, tons moyens ×0,96 à ×0,97. L'opérateur qui tient le rig reste visible en bas de l'HDRI.
 
-Vérification sur PLAN_1 : rendu Cycles depuis la caméra exportée, avec le monde seul visible. Le rendu retombe
-sur la plaque 4K à 0 à 20 px près (environ 0,2°) pour les éléments lointains, avec un niveau de lumière ×0,98
-à ×1,03 dans les tons moyens. Sur PLAN_2, plus difficile (peu de détails communs entre le plan et le 360),
-l'écart est de 16 à 64 px 4K (0,3 à 1°) et la lumière de ×0,95 dans les tons moyens. Les objets proches se
-décalent par parallaxe, car le 360 est 15 cm au-dessus de la FX3. L'opérateur qui tient le rig reste visible
-en bas de l'HDRI.
+### 8. Export vers Blender
 
-![Salle HDRI](captures/09_hdri.png)
+**Exporter vers Blender** (Ctrl+E) écrit un `.abc` (caméra animée, 360 témoin, nuage de points) et un `.blend` (plaque
+en fond de caméra, cadence et résolution du plan, HDRI comme monde). Réimporté dans Blender, l'Alembic reprojette les
+trackers à 2,24 px sur PLAN_1 et 2,26 px sur PLAN_2 (médiane, pixels 4K).
 
-### 7. Export Alembic vers Blender
+![Export Blender](captures/12_export_blender.png)
 
-**Exporter vers Blender (.abc)** (Ctrl+E) lance Blender en arrière-plan. Il écrit :
+Le projet s'enregistre (Ctrl+S, fichier `.w360`) et se rouvre tel quel, médias compris si le dossier a été déplacé.
 
-- un `.abc` avec la caméra FX3 animée, le 360 témoin et le nuage de points ;
-- un `.blend` avec la plaque en fond de caméra et l'HDRI du plan comme monde.
+### 9. Mise à jour automatique
 
-Vérification : une fois réimporté dans Blender, l'Alembic reprojette les trackers à 2,23 px sur PLAN_1 et
-2,15 px sur PLAN_2 (médiane, pixels 4K). Le `.blend` est réglé en 3840 × 2160, avec la plaque 4K en fond.
-Dans Blender, réglez la scène à la cadence du plan (25 i/s) avant **Fichier > Importer > Alembic**, ou ouvrez
-directement le `.blend`.
+Au démarrage, witness360 regarde s'il existe une version plus récente sur cette page et propose de l'installer :
+elle la télécharge, vérifie son empreinte SHA-256 (`SHA256SUMS.txt`), se ferme et redémarre. Vérification manuelle :
+menu Aide > Rechercher les mises à jour.
 
-![Export Blender](captures/10_export_blender.png)
+![Mise à jour disponible](captures/13_mise_a_jour.png)
 
-### 8. Mise à jour automatique
+## Autres tournages testés
 
-Quand une nouvelle version est publiée ici, l'appli la propose au démarrage :
-
-![Mise à jour disponible](captures/11_mise_a_jour.png)
+| Cas | Résultat |
+|---|---|
+| Vidéo 360 équirectangulaire, sans gyroscope | Synchro, angle de vue (56,15°), solve sur l'image seule (1,73 px), HDRI et export |
+| Sony A7 IV, Rec.709, 12-24 mm, rushes de 4 à 15 min | Boîtier, objectif, focale et capteur lus ; le 360 retrouvé dans le seul rush qui le recouvre (±9 ms), les autres rejetés |
+| Caméra fixe, loin du rig | Pas assez de décor commun avec le 360 : l'appli le signale et sort un HDRI aux couleurs du 360 |
 
 ## Feuille de route
 
 | Version | Contenu |
 |---|---|
 | 0.1 | Import, synchro audio 360, auto-track, versions Windows et Mac, mise à jour automatique |
-| 0.2 | Solve caméra aidé par le gyroscope 360, nettoyage des trackers, affinage, vues 3D avec la FX3 et le 360, export Alembic vers Blender |
-| 0.2.1 | Plans 4K de bout en bout (erreurs en pixels 4K, `.blend` en 3840 × 2160), caméra recentrée d'un demi-pixel |
-| 0.3 | HDRI tiré du 360 : rig masqué automatiquement, couleur et exposition étalonnées sur le plan (S-Log3 ou Rec.709), posé dans la scène Blender |
-| Prochaine | Tracking directement sur l'image 360 (trackers tout autour du rig), solve combiné des deux caméras |
-| Ensuite | Masques (opérateur, aussi retiré de l'HDRI), objectif FX3 (métadonnées, distorsion) |
+| 0.2 | Solve caméra aidé par le gyroscope 360, nettoyage des trackers, vues 3D, export Alembic vers Blender |
+| 0.2.1 | Plans 4K de bout en bout |
+| 0.3 | HDRI tiré du 360, étalonné sur le plan, posé dans la scène Blender |
+| 0.4 | Tout tournage : calages mesurés sur les fichiers, toute caméra de plan et toute caméra 360, 9 courbes de couleur, rushes longs, projets. Salles Objectif, Coordonnées et Masques. Visite guidée, aide et exemples dans chaque salle, icônes animées |
+| Prochaine | Opérateur retiré de l'HDRI, distorsion des objectifs, tracking directement sur l'image 360 |
 
 ## Configuration
 
 - Windows 10 ou 11 (64 bits), ou Mac Apple Silicon sous macOS 12 ou plus récent.
-- Caméra 360 : Insta360 ONE X2, fichiers `.insv` non stabilisés.
+- Blender (facultatif, pour écrire l'Alembic et le .blend ; sinon l'appli écrit le script à lancer).
