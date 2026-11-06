@@ -34,8 +34,8 @@ Vérification manuelle : menu Aide > Rechercher les mises à jour.
 
 ## Exemple : une scène réelle, pas à pas
 
-Scène de test : 2 plans tournés à la Sony FX3 (25 i/s) avec une Insta360 ONE X2 montée sur le même rig.
-Le fichier 360 dure 9 min 53 s. Les plans durent 11 s et 9 s.
+Scène de test : 2 plans tournés à la Sony FX3 en 4K (3840 × 2160, 25 i/s) avec une Insta360 ONE X2 montée
+sur le même rig. Le fichier 360 dure 9 min 53 s. Les plans durent 11 s et 9 s.
 
 ### 1. Importer et synchroniser
 
@@ -66,8 +66,10 @@ En bas, la timeline montre le nombre de trackers actifs sur chaque image.
 
 ![Trackers, vue quadruple](captures/03_trackers_quad.png)
 
-Sur PLAN_1, l'auto-track garde 4032 trackers, avec 125 à 474 trackers actifs par image (364 en moyenne).
-Un tracker est suivi 27 images en moyenne, et jusqu'à 107.
+Sur PLAN_1, l'auto-track garde 4034 trackers, avec 100 à 470 trackers actifs par image (349 en moyenne).
+Un tracker est suivi 26 images en moyenne, et jusqu'à 116.
+Les points sont suivis sur une image réduite à 960 px de large, plus robuste au flou des panoramiques, puis reportés
+sur le plan 4K. Sur cette scène, suivre en pleine résolution ne réduisait pas l'erreur du solve.
 
 La vue simple agrandit l'image. Vous pouvez y zoomer (50 à 200 %), afficher un seul canal (R, V, B, luminance) et
 afficher ou masquer les traînées.
@@ -86,12 +88,14 @@ Salle **Solveur**, bouton **Résoudre** (Maj+G).
 - **Échelle** : elle vient de la hauteur de la caméra au-dessus du sol.
 
 L'erreur s'affiche en pixels du plan, dans le panneau et image par image (courbe jaune de la timeline).
-Les trackers prennent la couleur de leur erreur :
+Les trackers prennent la couleur de leur erreur. Les seuils suivent la largeur du plan :
 
-- vert : 1,5 px ou moins ;
-- jaune : 3 px ou moins ;
-- rouge : plus de 3 px ;
-- gris : pas de position 3D.
+| Couleur | Plan de 1920 px | Plan 4K (3840 px) |
+|---|---|---|
+| vert | 1,5 px ou moins | 3 px ou moins |
+| jaune | 3 px ou moins | 6 px ou moins |
+| rouge | plus de 3 px | plus de 6 px |
+| gris | pas de position 3D | pas de position 3D |
 
 Les trackers posés sur la personne qui bouge sont rejetés : ils restent gris.
 
@@ -107,7 +111,7 @@ Les trackers posés sur la personne qui bouge sont rejetés : ils restent gris.
 - les trackers lointains ;
 - les sauts isolés.
 
-Le solve est ensuite affiné. Sur PLAN_1, l'erreur passe de 2,22 px à 1,47 px.
+Le solve est ensuite affiné. Sur PLAN_1, l'erreur passe de 4,57 px à 2,89 px (pixels 4K).
 
 ![Après nettoyage et affinage](captures/06_solveur_affine.png)
 
@@ -136,8 +140,8 @@ Le choix **Caméra active** passe de la FX3 d'un plan à la caméra 360 témoin.
 - un `.abc` avec la caméra FX3 animée, le 360 témoin et le nuage de points ;
 - un `.blend` avec la plaque en fond de caméra.
 
-Vérification : une fois réimporté dans Blender, l'Alembic de PLAN_1 reprojette les trackers à 1,19 px
-(médiane, image 1920 px).
+Vérification : une fois réimporté dans Blender, l'Alembic reprojette les trackers à 2,23 px sur PLAN_1 et
+2,15 px sur PLAN_2 (médiane, pixels 4K). Le `.blend` est réglé en 3840 × 2160, avec la plaque 4K en fond.
 Dans Blender, réglez la scène à la cadence du plan (25 i/s) avant **Fichier > Importer > Alembic**, ou ouvrez
 directement le `.blend`.
 
@@ -155,6 +159,7 @@ Quand une nouvelle version est publiée ici, l'appli la propose au démarrage :
 |---|---|
 | 0.1 | Import, synchro audio 360, auto-track, versions Windows et Mac, mise à jour automatique |
 | 0.2 | Solve caméra aidé par le gyroscope 360, nettoyage des trackers, affinage, vues 3D avec la FX3 et le 360, export Alembic vers Blender |
+| 0.2.1 | Plans 4K de bout en bout (erreurs en pixels 4K, `.blend` en 3840 × 2160), caméra recentrée d'un demi-pixel |
 | Prochaine | Tracking directement sur l'image 360 (trackers tout autour du rig), solve combiné des deux caméras |
 | Ensuite | Masques (opérateur), objectif FX3 (métadonnées, distorsion), HDRI 360 dans la scène Blender |
 
