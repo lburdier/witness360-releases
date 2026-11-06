@@ -278,7 +278,7 @@ L'appli compilée pour Windows passe aussi l'autotest sur le serveur de GitHub (
 | 0.3 | HDRI tiré du 360, étalonné sur le plan, posé dans la scène Blender |
 | 0.4 | Tout tournage : calages mesurés sur les fichiers, toute caméra de plan et toute caméra 360, 9 courbes de couleur, rushes longs, projets. Salles Objectif, Coordonnées et Masques. Visite guidée, aide et exemples dans chaque salle, icônes animées |
 | 0.5 | Montages découpés en plans, synchro son + image, autotest sur tournage de synthèse, Mac (raccourcis, pavé tactile, écrans 13 pouces), fiabilité (horloges, masque du rig, journal, annulation) ; 0.5.1 : enregistrement automatique du projet |
-| 0.6 | Scripts d'automatisation (`--script`, Fichier > Exécuter un script…), console du script, bilan JSON |
+| 0.6 | Scripts d'automatisation (`--script`, Fichier > Exécuter un script…), console du script, bilan JSON ; 0.6.1 : plus de fenêtres parasites pendant un script |
 | Prochaine | Opérateur retiré de l'HDRI, distorsion des objectifs, tracking directement sur l'image 360 |
 
 ## Configuration
