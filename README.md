@@ -178,7 +178,9 @@ trackers à 2,24 px sur PLAN_1 et 2,26 px sur PLAN_2 (médiane, pixels 4K).
 
 ![Export Blender](captures/12_export_blender.png)
 
-Le projet s'enregistre (Ctrl+S, fichier `.w360`) et se rouvre tel quel, médias compris si le dossier a été déplacé.
+Le projet (fichier `.w360`) s'enregistre tout seul quelques secondes après chaque changement, dans le dossier de
+sortie, et se rouvre tel quel, médias compris si le dossier a été déplacé. Ctrl+S et Ctrl+Maj+S restent disponibles ;
+menu Fichier > Enregistrement automatique pour l'arrêter.
 
 ### 9. Mise à jour automatique
 
@@ -199,6 +201,43 @@ comparé à celui du rig vu par le gyroscope du 360 sur tout le fichier, puis le
 |---|---|---|
 | Montage de 4 morceaux des vrais plans (S-Log3, rig FX3 + ONE X2), sur une musique | 3 coupes sur 3, à l'image près | Les 4 plans retrouvés dans le 360 de 4 min 30 ; écart constant de 135 ms avec le son, qui est la latence image / son de la caméra |
 | Montage de synthèse de 4 plans d'environ 1 s, sur une musique | 3 coupes sur 3, à l'image près | Les 4 plans retrouvés, à 0,1 s près |
+
+## Scripts : toute la chaîne sans cliquer
+
+Fichier > Exécuter un script… (Ctrl+Maj+E) lance un fichier Python qui pilote witness360 comme à la souris : mêmes
+calculs, mêmes fichiers. Une console montre chaque étape, et le bouton Arrêter l'interrompt proprement. En ligne de
+commande :
+
+```
+witness360 --script mon_script.py [arguments] [--quitter]
+/Applications/witness360.app/Contents/MacOS/witness360 --script mon_script.py   (Mac)
+```
+
+Le script reçoit l'objet `w360` :
+
+```python
+w360.sortie("D:/projet/POUR_3D")
+w360.importer("D:/rushes/VID_20261105_181555_00_003.insv", "D:/rushes/C6832.MP4")
+w360.synchroniser()
+p = w360.plage(w360.plan(0), 4651, 4946)        # images du rush à traiter
+w360.renommer(p, "PLAN_1")                       # nom des fichiers exportés
+w360.auto_track(p)
+w360.mesurer_objectif(p)                         # angle de vue mesuré sur le 360
+w360.resoudre(p)                                 # solve aidé par le gyroscope du 360
+w360.nettoyer(p)                                 # nettoyage des trackers + affinage
+w360.hdri(p, image=27)                           # HDRI .exr étalonné sur le plan
+w360.exporter(p)                                 # .abc + .blend pour Blender
+w360.bilan("D:/projet/POUR_3D/bilan.json")       # chiffres de contrôle de chaque étape
+```
+
+Sur la scène d'exemple (rush FX3 4K + Insta360 ONE X2, 2 plans), un script fait toute la chaîne en 17 minutes, sans un
+clic : synchro à 0,0 ms de la mesure de référence, solve à 2,5 px (4K) sur les deux plans, HDRI à ×1,01 et ×0,99 de
+la lumière du plan, Alembic réimporté dans Blender à 1,9 et 2,4 px.
+
+Une étape impossible arrête le script avec un message clair (`ErreurScript`), qu'on peut rattraper pour passer au plan
+suivant. La liste complète des appels est dans le guide de l'appli (F12, partie Scripts). Exemple complet :
+[`scripts/exemple_chaine_complete.py`](scripts/exemple_chaine_complete.py). N'exécutez que des scripts dont vous
+connaissez la provenance : ils ont les mêmes droits que vous.
 
 ## Autotest
 
@@ -238,7 +277,8 @@ L'appli compilée pour Windows passe aussi l'autotest sur le serveur de GitHub (
 | 0.2.1 | Plans 4K de bout en bout |
 | 0.3 | HDRI tiré du 360, étalonné sur le plan, posé dans la scène Blender |
 | 0.4 | Tout tournage : calages mesurés sur les fichiers, toute caméra de plan et toute caméra 360, 9 courbes de couleur, rushes longs, projets. Salles Objectif, Coordonnées et Masques. Visite guidée, aide et exemples dans chaque salle, icônes animées |
-| 0.5 | Montages découpés en plans, synchro son + image, autotest sur tournage de synthèse, Mac (raccourcis, pavé tactile, écrans 13 pouces), fiabilité (horloges, masque du rig, journal, annulation) |
+| 0.5 | Montages découpés en plans, synchro son + image, autotest sur tournage de synthèse, Mac (raccourcis, pavé tactile, écrans 13 pouces), fiabilité (horloges, masque du rig, journal, annulation) ; 0.5.1 : enregistrement automatique du projet |
+| 0.6 | Scripts d'automatisation (`--script`, Fichier > Exécuter un script…), console du script, bilan JSON |
 | Prochaine | Opérateur retiré de l'HDRI, distorsion des objectifs, tracking directement sur l'image 360 |
 
 ## Configuration
