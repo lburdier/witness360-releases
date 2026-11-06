@@ -133,25 +133,46 @@ Le choix **Caméra active** passe de la FX3 d'un plan à la caméra 360 témoin.
 
 ![Rig FX3 et 360](captures/08_rig_fx3_360.png)
 
-### 6. Export Alembic vers Blender
+### 6. HDRI de la scène, étalonné sur le plan
+
+La salle **HDRI** (Ctrl+H) tire un HDRI `.exr` linéaire de la caméra 360, à l'image affichée dans la timeline :
+
+- le rig, la caméra du plan, le moniteur et le câble sont détectés automatiquement (ils restent fixes dans
+  l'image 360) puis bouchés avec la lumière des alentours ;
+- le 360 est comparé au plan, à plusieurs images et pixel à pixel, pour reprendre sa couleur et son exposition.
+  Le plan est décodé en linéaire (S-Log3 / S-Gamut3.Cine pour la FX3, ou Rec.709) : un gris à 18 % vu par
+  le plan vaut 0,18 dans l'HDRI ;
+- en orientation **Scène trackée**, l'HDRI est posé dans le repère de la caméra exportée et recalé sur
+  l'image du plan. L'export Blender l'ajoute au monde du `.blend`, sans rotation à régler.
+
+Vérification sur PLAN_1 : rendu Cycles depuis la caméra exportée, avec le monde seul visible. Le rendu retombe
+sur la plaque 4K à 0 à 20 px près (environ 0,2°) pour les éléments lointains, avec un niveau de lumière ×0,98
+à ×1,03 dans les tons moyens. Sur PLAN_2, plus difficile (peu de détails communs entre le plan et le 360),
+l'écart est de 16 à 64 px 4K (0,3 à 1°) et la lumière de ×0,95 dans les tons moyens. Les objets proches se
+décalent par parallaxe, car le 360 est 15 cm au-dessus de la FX3. L'opérateur qui tient le rig reste visible
+en bas de l'HDRI.
+
+![Salle HDRI](captures/09_hdri.png)
+
+### 7. Export Alembic vers Blender
 
 **Exporter vers Blender (.abc)** (Ctrl+E) lance Blender en arrière-plan. Il écrit :
 
 - un `.abc` avec la caméra FX3 animée, le 360 témoin et le nuage de points ;
-- un `.blend` avec la plaque en fond de caméra.
+- un `.blend` avec la plaque en fond de caméra et l'HDRI du plan comme monde.
 
 Vérification : une fois réimporté dans Blender, l'Alembic reprojette les trackers à 2,23 px sur PLAN_1 et
 2,15 px sur PLAN_2 (médiane, pixels 4K). Le `.blend` est réglé en 3840 × 2160, avec la plaque 4K en fond.
 Dans Blender, réglez la scène à la cadence du plan (25 i/s) avant **Fichier > Importer > Alembic**, ou ouvrez
 directement le `.blend`.
 
-![Export Blender](captures/09_export_blender.png)
+![Export Blender](captures/10_export_blender.png)
 
-### 7. Mise à jour automatique
+### 8. Mise à jour automatique
 
 Quand une nouvelle version est publiée ici, l'appli la propose au démarrage :
 
-![Mise à jour disponible](captures/10_mise_a_jour.png)
+![Mise à jour disponible](captures/11_mise_a_jour.png)
 
 ## Feuille de route
 
@@ -160,8 +181,9 @@ Quand une nouvelle version est publiée ici, l'appli la propose au démarrage :
 | 0.1 | Import, synchro audio 360, auto-track, versions Windows et Mac, mise à jour automatique |
 | 0.2 | Solve caméra aidé par le gyroscope 360, nettoyage des trackers, affinage, vues 3D avec la FX3 et le 360, export Alembic vers Blender |
 | 0.2.1 | Plans 4K de bout en bout (erreurs en pixels 4K, `.blend` en 3840 × 2160), caméra recentrée d'un demi-pixel |
+| 0.3 | HDRI tiré du 360 : rig masqué automatiquement, couleur et exposition étalonnées sur le plan (S-Log3 ou Rec.709), posé dans la scène Blender |
 | Prochaine | Tracking directement sur l'image 360 (trackers tout autour du rig), solve combiné des deux caméras |
-| Ensuite | Masques (opérateur), objectif FX3 (métadonnées, distorsion), HDRI 360 dans la scène Blender |
+| Ensuite | Masques (opérateur, aussi retiré de l'HDRI), objectif FX3 (métadonnées, distorsion) |
 
 ## Configuration
 
